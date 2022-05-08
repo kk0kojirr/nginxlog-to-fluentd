@@ -1,0 +1,40 @@
+version: '3'
+services:
+  webserv:
+    image: nginx
+    container_name: nginx
+    restart: always
+    networks:
+      - monitor
+    ports:
+      - 80:80
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: "docker.{{.Name}}"
+        fluentd-async-connect: "true"
+    depends_on:
+      - logserv
+
+  logserv:
+    image: cr.fluentbit.io/fluent/fluent-bit
+    container_name: fluentbit
+    restart: always
+    networks:
+      - monitor
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - ./data:/fluentd/log
+      - type: bind
+        source: "./conf/fluent-bit.conf"
+        target: "/fluent-bit/etc/fluent-bit.conf"
+      - type: bind
+        source: "./conf/parsers.conf"
+        target: "/fluent-bit/etc/parsers.conf"
+
+networks:
+  monitor:
+    name: monitor
